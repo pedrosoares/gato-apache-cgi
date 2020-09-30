@@ -8,6 +8,14 @@ impl ApacheHttpCore {
     pub fn new() -> ApacheHttpCore {
         return ApacheHttpCore { };
     }
+
+    fn first_letter_to_upper_case (&self, s1: String) -> String {
+        let mut c = s1.chars();
+        match c.next() {
+            None => String::new(),
+            Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+        }
+    }
 }
 
 impl HttpCore for ApacheHttpCore {
@@ -18,8 +26,11 @@ impl HttpCore for ApacheHttpCore {
         let method = env::var("REQUEST_METHOD").unwrap_or("GET".to_string());
         // Initialize the Variable Method
         let uri = env::var("REQUEST_URI").unwrap_or("/".to_string());
+        // TODO change request object to RequestBuilder
         // Create Request
         let mut request = Request::new(method, uri, self.get_request_headers());
+        // Add request body if exits to request object
+        request.add_body(self.get_post_data());
         // Get RouterHandler Driver
         let router_handler = RouterHandler::get_driver();
         // Get Response from RouterHandle
@@ -38,11 +49,16 @@ impl HttpCore for ApacheHttpCore {
 
     fn get_request_headers(&self) -> HashMap<String, String> {
         let mut request_headers: HashMap<String, String> = HashMap::new();
-        let args: Vec<_> = env::args().collect();
-        for arg in args {
-            let pieces: Vec<&str> = arg.split("=").collect();
-            if pieces.len() == 2 {
-                request_headers.insert(pieces[0].to_string(), pieces[1].to_string());
+        let vars: Vec<_>  = env::vars().collect();
+        for arg in vars {
+            if arg.0.starts_with("HTTP_") || arg.0 == "CONTENT_TYPE"  || arg.0 == "CONTENT_LENGTH" {
+                let mut name = vec![];
+                let tmp = arg.0.replace("HTTP_", "");
+                let names = tmp.split("_");
+                for n in names {
+                    name.push(self.first_letter_to_upper_case(n.to_lowercase()));
+                }
+                request_headers.insert(name.join("-"), arg.1);
             }
         }
         return request_headers;
