@@ -1,6 +1,6 @@
 use std::env;
 use std::collections::HashMap;
-use gato_core::kernel::{HttpCore, RouterHandler, Request, Logger};
+use gato_core::kernel::{HttpCore, RouterHandler, Logger, RequestBuilder};
 
 pub struct ApacheHttpCore { }
 
@@ -22,17 +22,15 @@ impl HttpCore for ApacheHttpCore {
 
     fn handle(&self) {
         Logger::info("ApacheHttpCore[handle]");
-        // Initialize the Variable Method
-        let method = env::var("REQUEST_METHOD").unwrap_or("GET".to_string());
-        // Initialize the Variable Method
-        let uri = env::var("REQUEST_URI").unwrap_or("/".to_string());
-        // TODO change request object to RequestBuilder
-        // Create Request
-        let mut request = Request::new(method, uri, self.get_request_headers());
-        // Add request body if exits to request object
-        request.add_body(self.get_post_data());
         // Get RouterHandler Driver
         let router_handler = RouterHandler::get_driver();
+
+        // Create RequestBuilder
+        let mut request = RequestBuilder::new();
+        request.add_method(env::var("REQUEST_METHOD").unwrap_or("GET".to_string()));
+        request.add_uri(env::var("REQUEST_URI").unwrap_or("/".to_string()));
+        request.add_body(self.get_post_data());
+
         // Get Response from RouterHandle
         let response = router_handler.handle(&mut request);
         // Get Response Headers
