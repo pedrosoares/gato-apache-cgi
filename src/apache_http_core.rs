@@ -30,6 +30,7 @@ impl HttpCore for ApacheHttpCore {
         request.add_method(env::var("REQUEST_METHOD").unwrap_or("GET".to_string()));
         request.add_uri(env::var("REQUEST_URI").unwrap_or("/".to_string()));
         request.add_body(self.get_post_data());
+        request.add_headers(self.get_request_headers());
 
         // Get Response from RouterHandle
         let response = router_handler.handle(&mut request);
